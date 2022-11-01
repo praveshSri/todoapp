@@ -1,19 +1,22 @@
+import { Card } from "@mui/material";
 import React from "react";
 import SingleTask from "./SingleTask";
 
-function TaskList({ toDoList, setTaskStatus }) {
+function TaskList({ toDoList, setTaskStatus, handleEdit,handleDelete }) {
   return (
     <>
-      <ul>
+      <Card variant="outlined" sx={{ minWidth: 700, justifyContent: "space-between" }}>
         {toDoList.map((todoItem) => {
           return (
             <SingleTask
               task={todoItem}
               setTaskStatus={setTaskStatus}
+              handleEdit={handleEdit}
+              handleDelete={handleDelete}
             />
           );
         })}
-      </ul>
+      </Card>
     </>
   );
 }
