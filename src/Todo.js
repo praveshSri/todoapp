@@ -1,57 +1,174 @@
-import { Button, TextField } from "@mui/material";
-import React, { useState } from "react";
-import TaskList from "./TaskList";
-import "./Todo.css";
+import { Button, MenuItem, Select, TextField } from "@mui/material";
+import React, { useRef, useState } from "react";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { DateTimePicker } from "@mui/x-date-pickers";
+import moment from "moment";
+
+import TaskList from "./TaskList";
+import "./Todo.css";
+
+const categories = [
+  {
+    name: "Work",
+    color: "crimson",
+  },
+  {
+    name: "Personal",
+    color: "coral",
+  },
+  {
+    name: "Study",
+    color: "aquamarine",
+  },
+  {
+    name: "sports",
+    color: "aqua",
+  },
+];
 
 function Todo() {
-  const [getInputText, setInputText] = useState("");
+  const inputTextRef = useRef();
+
   const [getDate, setDate] = useState(null);
   const [toDoList, setToDoList] = useState([]);
   const [sortOrder, setSortOrder] = React.useState(true);
+  const [category, setCategory] = React.useState("");
 
-  function inputHandler(event) {
+  function deadlineMaker(dateDifference, timeType) {
+    if (dateDifference < 0) {
+      return `Deadline in ${Math.abs(dateDifference)} ${timeType}`;
+    } else {
+      return `Deadline expired ${Math.abs(dateDifference)} ${timeType} ago`;
+    }
+  }
+
+  /* function inputHandler(event) {
     if (!(event.target.value.trim() === "")) {
       setInputText(event.target.value);
     } else {
       setInputText("");
     }
-  }
+  } */
   function addToHandler() {
+    console.log("sggg", inputTextRef.current.value);
+    // calculate deadline
+    let deadline;
+    if (moment(new Date()).diff(moment(new Date(getDate)), "days") !== 0) {
+      deadline = deadlineMaker(
+        moment(new Date()).diff(moment(new Date(getDate)), "days"),
+        "days"
+      );
+    } else if (
+      moment(new Date()).diff(moment(new Date(getDate)), "hours") !== 0
+    ) {
+      deadline = deadlineMaker(
+        moment(new Date()).diff(moment(new Date(getDate)), "hours"),
+        "hours"
+      );
+    } else if (
+      moment(new Date()).diff(moment(new Date(getDate)), "minutes") !== 0
+    ) {
+      deadline = deadlineMaker(
+        moment(new Date()).diff(moment(new Date(getDate)), "minutes"),
+        "minutes"
+      );
+    } else {
+      deadline = deadlineMaker(
+        moment(new Date()).diff(moment(new Date(getDate)), "seconds"),
+        "seconds"
+      );
+    }
     setToDoList([
       ...toDoList,
-      { id: new Date().getTime(), task: getInputText, completed: false },
+      {
+        id: new Date().getTime(),
+        task: inputTextRef.current.value,
+        completed: false,
+        category,
+        deadline,
+        createdAt: getDate,
+      },
     ]);
     localStorage.setItem(
       "Tasks",
       JSON.stringify([
         ...toDoList,
-        { id: new Date().getTime(), task: getInputText, completed: false },
+        {
+          id: new Date().getTime(),
+          task: inputTextRef.current.value,
+          completed: false,
+          category,
+          deadline,
+          createdAt: getDate,
+        },
       ])
     );
-    setInputText("");
+    inputTextRef.current.value = "";
+    // setInputText("");
   }
   function onEnter(e) {
-    if (getInputText && getInputText === "") return;
+    if (inputTextRef.current.value && inputTextRef.current.value === "") return;
     if (e.key === "Enter") {
       e.preventDefault();
+      // calculate deadline
+      let deadline = null;
+      if (getDate && getDate !== "") {
+        if (moment(new Date()).diff(moment(new Date(getDate)), "days") !== 0) {
+          deadline = deadlineMaker(
+            moment(new Date()).diff(moment(new Date(getDate)), "days"),
+            "days"
+          );
+        } else if (
+          moment(new Date()).diff(moment(new Date(getDate)), "hours") !== 0
+        ) {
+          deadline = deadlineMaker(
+            moment(new Date()).diff(moment(new Date(getDate)), "hours"),
+            "hours"
+          );
+        } else if (
+          moment(new Date()).diff(moment(new Date(getDate)), "minutes") !== 0
+        ) {
+          deadline = deadlineMaker(
+            moment(new Date()).diff(moment(new Date(getDate)), "minutes"),
+            "minutes"
+          );
+        } else {
+          deadline = deadlineMaker(
+            moment(new Date()).diff(moment(new Date(getDate)), "seconds"),
+            "seconds"
+          );
+        }
+      }
       setToDoList([
         ...toDoList,
-        { id: new Date().getTime(), task: getInputText, completed: false },
+        {
+          id: new Date().getTime(),
+          task: inputTextRef.current.value,
+          completed: false,
+          category,
+          deadline,
+          createdAt: getDate,
+        },
       ]);
       localStorage.setItem(
         "Tasks",
         JSON.stringify([
           ...toDoList,
-          { id: new Date().getTime(), task: getInputText, completed: false },
+          {
+            id: new Date().getTime(),
+            task: inputTextRef.current.value,
+            completed: false,
+            category,
+            createdAt: getDate,
+          },
         ])
       );
-      setInputText("");
+      inputTextRef.current.value = "";
     }
   }
   function handleEdit(taskId, editData, setCurrentEditedTaskId) {
+    console.log("object", editData);
     const tempList = toDoList.map((task) => {
       if (task.id === taskId) {
         task.task = editData;
@@ -70,7 +187,42 @@ function Todo() {
   React.useEffect(() => {
     console.log("tasks", localStorage.getItem("Tasks"));
     if (!localStorage.getItem("Tasks")) return;
-    setToDoList(JSON.parse(localStorage.getItem("Tasks")));
+    const taskList = JSON.parse(localStorage.getItem("Tasks")).map((item) => {
+      if (!item.createdAt && item.created == null) return item;
+      // calculate deadline again
+      let deadline;
+      if (
+        moment(new Date()).diff(moment(new Date(item.createdAt)), "days") !== 0
+      ) {
+        deadline = deadlineMaker(
+          moment(new Date()).diff(moment(new Date(item.createdAt)), "days"),
+          "days"
+        );
+      } else if (
+        moment(new Date()).diff(moment(new Date(item.createdAt)), "hours") !== 0
+      ) {
+        deadline = deadlineMaker(
+          moment(new Date()).diff(moment(new Date(item.createdAt)), "hours"),
+          "hours"
+        );
+      } else if (
+        moment(new Date()).diff(moment(new Date(item.createdAt)), "minutes") !==
+        0
+      ) {
+        deadline = deadlineMaker(
+          moment(new Date()).diff(moment(new Date(item.createdAt)), "minutes"),
+          "minutes"
+        );
+      } else {
+        deadline = deadlineMaker(
+          moment(new Date()).diff(moment(new Date(item.createdAt)), "seconds"),
+          "seconds"
+        );
+      }
+      item.deadline = deadline;
+      return item;
+    });
+    setToDoList(taskList);
   }, []);
 
   function setTaskStatus(taskId) {
@@ -115,31 +267,56 @@ function Todo() {
       <div className="header">
         <h1>Todo App</h1>
       </div>
-      <div className="content">
+      <div className="body">
         <div className="inputBox">
           <TextField
-            className="inputBox"
-            required
+            id="outlined-textarea"
             placeholder="Type 'Todo' and press enter"
-            value={getInputText}
-            onChange={inputHandler}
+            multiline
+            // value={getInputText}
+            // name
+            inputRef={inputTextRef}
+            // onChange={inputHandler}
             onKeyDown={(e) => onEnter(e)}
-            variant="standard"
+            size="small"
+            fullWidth
           />
-          <Button variant="contained" size="small" onClick={addToHandler}>
-            Add To Do
-          </Button>
+
+          {/* <InputLabel id="demo-simple-select-helper-label">
+            Select Category
+          </InputLabel> */}
+          <Select
+            sx={{ width: "22%", height: "72%" }}
+            labelId="demo-simple-select-helper-label"
+            id="demo-simple-select-helper"
+            value={category}
+            placeholder="Select Category"
+            onChange={(event) => {
+              setCategory(event.target.value);
+            }}
+          >
+            {categories.map((category) => {
+              return <MenuItem value={category}>{category.name}</MenuItem>;
+            })}
+          </Select>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker
-              size="small"
-              label="Select Date"
+            <DateTimePicker
+              renderInput={(props) => <TextField {...props} />}
+              label="DateTimePicker"
               value={getDate}
               onChange={(newDate) => {
-                getDate(newDate);
+                setDate(newDate);
               }}
-              renderInput={(params) => <TextField {...params} />}
             />
           </LocalizationProvider>
+          <Button
+            sx={{ width: "12%", height: "75%" }}
+            variant="contained"
+            size="small"
+            onClick={addToHandler}
+          >
+            Add
+          </Button>
         </div>
         <ul>
           <TaskList
@@ -152,11 +329,21 @@ function Todo() {
         </ul>
       </div>
       <div className="viewButtons">
-        <Button variant="outlined" color="success" onClick={showAllTasks}>All Tasks</Button>
-        <Button variant="outlined" color="success" onClick={showActiveTasks}>Active Tasks</Button>
-        <Button variant="outlined" color="success" onClick={showCompletedTasks}>Completed Tasks</Button>
-        <Button variant="outlined" color="success" onClick={sortByLocale}>Sort</Button>
-        <Button variant="outlined" color="error" onClick={resetTasks}>Reset</Button>
+        <Button variant="outlined" color="success" onClick={showAllTasks}>
+          All Tasks
+        </Button>
+        <Button variant="outlined" color="success" onClick={showActiveTasks}>
+          Active Tasks
+        </Button>
+        <Button variant="outlined" color="success" onClick={showCompletedTasks}>
+          Completed Tasks
+        </Button>
+        <Button variant="outlined" color="success" onClick={sortByLocale}>
+          Sort
+        </Button>
+        <Button variant="outlined" color="error" onClick={resetTasks}>
+          Reset
+        </Button>
       </div>
     </div>
   );
